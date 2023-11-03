@@ -1,21 +1,19 @@
 import os
 import shutil
+import json
+import time
 
 
-allowed_formats = ['.jpg', '.mp4']
-sources = ['', '']
-destination = ''
-date_from = 2023091900000
-date_to = 2023100100000
+cfg = {}
 
 
 def _move_entry(entry: os.DirEntry[str], dest_dir: str, sfx: str) -> int:
     f_ext = entry.name[-4:].lower()
-    if f_ext not in allowed_formats:
+    if f_ext not in cfg['allowed_formats']:
         print("{} is not a media file {} extension is not in the {}".format(
             entry.name, 
             f_ext, 
-            allowed_formats))
+            cfg['allowed_formats']))
         return 0
     
     entry_idx = entry.name[4:12] + entry.name[14:19]
@@ -23,7 +21,7 @@ def _move_entry(entry: os.DirEntry[str], dest_dir: str, sfx: str) -> int:
         print("{} is not a numeric value".format(entry_idx))
         return 0
     
-    if  date_from < int(entry_idx) < date_to:
+    if  cfg['date_from'] < int(entry_idx) < cfg['date_to']:
         to_pth = dest_dir + entry_idx + sfx + f_ext
         print(to_pth)
         shutil.copyfile(entry.path, to_pth)
@@ -33,20 +31,28 @@ def _move_entry(entry: os.DirEntry[str], dest_dir: str, sfx: str) -> int:
 
 
 def _move_files(src: str, sfx: str):
-    global destination
     with os.scandir(path=src) as dir_entries:
         counter = 0
         for entry in dir_entries:
-            counter += _move_entry(entry, destination, sfx)
+            counter += _move_entry(entry, cfg['destination'], sfx)
 
     print("{} files were moved".format(counter))
 
 
+def _read_cfg(pth: str):
+    global cfg
+    with open(pth) as cfg_file:
+        cfg = json.loads(cfg_file.read())
+
+
 def main():
-    global sources
-    for i, filepath in enumerate(sources):
+    _read_cfg('./data/move_data.json')
+    for i, filepath in enumerate(cfg['sources']):
         _move_files(filepath, str(i))
 
 
+
 if __name__ == "__main__":
+    start_time = time.time()
     main()
+    print("Elapsed time: {}".format(time.time() - start_time)) 
